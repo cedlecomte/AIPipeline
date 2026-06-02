@@ -1,0 +1,289 @@
+version: '3.8'
+
+# Podman Compose configuration
+# Use: podman-compose up -d
+
+services:
+  # Redis message bus
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: ansible-pipeline-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - agent-network
+    # Rootless Podman: set resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Jira Integration Agent
+  jira-agent:
+    build:
+      context: .
+      dockerfile: agents/jira_integration/Dockerfile
+    container_name: ansible-pipeline-jira
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Architect Agent
+  architect-agent:
+    build:
+      context: .
+      dockerfile: agents/architect/Dockerfile
+    container_name: ansible-pipeline-architect
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Developer Agent
+  developer-agent:
+    build:
+      context: .
+      dockerfile: agents/developer/Dockerfile
+    container_name: ansible-pipeline-developer
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Tester Agent
+  tester-agent:
+    build:
+      context: .
+      dockerfile: agents/tester/Dockerfile
+    container_name: ansible-pipeline-tester
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      - ./test_results:/app/test_results:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Code Reviewer Agent
+  reviewer-agent:
+    build:
+      context: .
+      dockerfile: agents/code_reviewer/Dockerfile
+    container_name: ansible-pipeline-reviewer
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Release Agent
+  release-agent:
+    build:
+      context: .
+      dockerfile: agents/release/Dockerfile
+    container_name: ansible-pipeline-release
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Certification Agent
+  certification-agent:
+    build:
+      context: .
+      dockerfile: agents/certification/Dockerfile
+    container_name: ansible-pipeline-certification
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Orchestrator
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    container_name: ansible-pipeline-orchestrator
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    container_name: ansible-pipeline-dashboard
+    env_file:
+      - .env
+    ports:
+      - "${DASHBOARD_PORT}:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      # Mount gcloud credentials for VertexAI auth
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      # Or use service account if GOOGLE_APPLICATION_CREDENTIALS is set
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+      - workspaces:/workspaces
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+  # Dynamic Agent Worker
+  agent-worker:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+    container_name: ansible-pipeline-worker
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs:z
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro,z
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/app/service-account.json:ro
+      - workspaces:/workspaces
+    environment:
+      - ANTHROPIC_VERTEX_PROJECT_ID=${ANTHROPIC_VERTEX_PROJECT_ID}
+      - CLOUD_ML_REGION=${CLOUD_ML_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  workspaces:

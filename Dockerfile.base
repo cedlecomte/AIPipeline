@@ -1,0 +1,42 @@
+# Base image for all agents - Red Hat/Fedora environment
+# Using 'latest' to always get current stable Fedora (currently 44)
+FROM registry.fedoraproject.org/fedora:latest
+
+# Install system dependencies using dnf (Fedora/RHEL package manager)
+RUN dnf -y update && \
+    dnf -y install \
+    python3.11 \
+    python3-pip \
+    python3-devel \
+    git \
+    curl \
+    gcc \
+    gcc-c++ \
+    make \
+    openssl-devel \
+    libffi-devel \
+    && dnf clean all
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements
+COPY pyproject.toml ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -e .
+
+# Copy shared code
+COPY shared/ ./shared/
+COPY config/ ./config/
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Set Python path
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Default command (override in specific Containerfiles)
+CMD ["python", "-m", "agent"]

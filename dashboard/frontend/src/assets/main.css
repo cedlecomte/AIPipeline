@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-gray-200 min-h-screen;
+  }
+}
+
+/* Vue Flow overrides for dark theme */
+.vue-flow {
+  @apply bg-surface rounded-lg;
+}
+
+.vue-flow__minimap {
+  @apply bg-surface-light;
+}
+
+.vue-flow__controls {
+  @apply bg-surface-light border-surface-lighter;
+}
+
+.vue-flow__controls button {
+  @apply bg-surface-light text-gray-300 border-surface-lighter;
+}
+
+.vue-flow__controls button:hover {
+  @apply bg-surface-lighter;
+}
+
+/* Make edges easier to click */
+.vue-flow__edge-interaction {
+  stroke-width: 20px;
+  stroke: transparent;
+  cursor: pointer;
+}
+
+/* Selected edge highlight */
+.vue-flow__edge.selected .vue-flow__edge-path {
+  stroke: #667eea !important;
+  stroke-width: 3px !important;
+}
+
+/* Edge label styling */
+.vue-flow__edge-text {
+  font-size: 11px;
+  fill: #9ca3af;
+}
