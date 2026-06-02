@@ -45,4 +45,4 @@ make trigger-pipeline   # Start test pipeline
 
 ## License
 
-MIT
+GPLv2 — see [LICENSE](LICENSE)
